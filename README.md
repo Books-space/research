@@ -1,2 +1,3 @@
 # research
-Dev research for project 
+
+This repo for research and documentation
