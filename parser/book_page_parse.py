@@ -1,13 +1,13 @@
+from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
-import json
 
 
 GOOGLE_CACHE_PATH = 'http://webcache.googleusercontent.com/search?q=cache:'
-BOOK_BASE_URL = 'https://www.labirint.ru/books/81239{}/'
+BOOK_BASE_URL = 'https://www.labirint.ru/books/81249{}/'
 DEBUG_STRING = """\n
-        ----------------------------
-        book No. {}
+        ---------
+        Book:
         ---------
         1. Title: {};
         2. Authors: {};
@@ -17,6 +17,26 @@ DEBUG_STRING = """\n
         6. Cover image URL: {};
         7. Annotation: {} 
         """
+
+@dataclass
+class Book:
+    title: str
+    author: str
+    publisher: str
+    year: int
+    isbn: str
+    cover_image_url: str
+    annotation: str
+
+    def __repr__(self):
+        return DEBUG_STRING .format(self.title, 
+                                    self.author,
+                                    self.publisher,
+                                    self.year,
+                                    self.isbn,
+                                    self.cover_image_url,
+                                    self.annotation)
+
 
 class SingleBookPageParser:
     def __init__(self, book_number):
@@ -33,7 +53,6 @@ class SingleBookPageParser:
         # Find book specs block
         self.book_specs = self.source.find('div', 'product-description')
         self.publisher_div = self.book_specs.find('div', 'publisher')
-
 
     def find_book_title(self):
         if not self.book_page_exists:
@@ -70,7 +89,7 @@ class SingleBookPageParser:
         isbn_div = self.book_specs.find('div', 'isbn')
 
         if isbn_div is not None:
-            isbn = isbn_div.text
+            isbn = isbn_div.text.split()[-1]
         else:
             inbn = '-'
         return isbn
@@ -89,29 +108,27 @@ class SingleBookPageParser:
             image_url = image_div.img[src_key]
         return image_url
 
-    # 7. Find annotation text
     def find_annotation_text(self):
         if not self.book_page_exists:
             return None
         about_div = self.source.find('div', id='product-about')
         annotation = about_div.p.text
+        return annotation
 
     def return_result(self):
         if self.book_page_exists:
-            debug_result_string = DEBUG_STRING.format(self.book_number, 
-                                                    self.find_book_title(), 
-                                                    self.find_authors(),
-                                                    self.find_publisher(),
-                                                    self.find_year(),
-                                                    self.find_isbn(),
-                                                    self.find_cover_image_url(),
-                                                    self.find_annotation_text())
-
-            return debug_result_string
+            return Book(self.find_book_title(), 
+                        self.find_authors(),
+                        self.find_publisher(),
+                        self.find_year(),
+                        self.find_isbn(),
+                        self.find_cover_image_url(),
+                        self.find_annotation_text())
         return None
 
 
 if __name__ == '__main__':
     for i in range(10):
+        print(i)
         book_parser = SingleBookPageParser(i)
-        print(book_parser.return_result())
+        print(book_parser.return_result().__repr__())
