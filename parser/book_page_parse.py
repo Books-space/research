@@ -7,82 +7,98 @@ GOOGLE_CACHE_PATH = 'http://webcache.googleusercontent.com/search?q=cache:'
 BOOK_BASE_URL = 'https://www.labirint.ru/books/81239{}/'
 
 
-def parse_single_book_page(book_number):
-    request_result = httpx.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
-    code = request_result.status_code
-    if code < 200 or code > 299:
-        print(f'\n-----\nPage doesn\'t exist for book {book_number}. Status code {code}')
-        return
+class ParseSingleBookPage:
+    def __init__(self, book_number):
+        self.book_page_exists = True
+        request_result = httpx.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
+        code = request_result.status_code
+        if code < 200 or code > 299:
+            print(f'\n-----\nPage doesn\'t exist for book {book_number}. Status code {code}')
+            self.book_page_exists = False
+            return
 
-    source = BeautifulSoup(request_result.text, 'lxml')
+        self.source = BeautifulSoup(request_result.text, 'lxml')
+        # Find book specs block
+        self.book_specs = self.source.find('div', 'product-description')
+        
+    def find_book_title(self):
+        if not self.book_page_exists:
+            return None
+        title_div = self.source.find('div', 'prodtitle')
+        book_title = title_div.h1.text
+        return book_title
 
-    # 1. Find book title
-    title_div = source.find('div', 'prodtitle')
-    book_title = title_div.h1.text
+    def find_authors(self):
+        if not self.book_page_exists:
+            return None
+        authors_div = self.book_specs.find('div', 'authors')
+        if authors_div:
+            author = authors_div.a.text
+        else:
+            author = '-'
+        return author
 
+    def find_publisher(self):
+        if not self.book_page_exists:
+            return None
+        publisher_div = self.book_specs.find('div', 'publisher')
+        publisher = publisher_div.a.text
+        return publisher
 
-    # Find book specs block
-    book_specs = source.find('div', 'product-description')
+    def find_year(self):
+        if not self.book_page_exists:
+            return None
+        year = self.publisher_div.text.split()[-2]
+        return year
 
+    def find_isbn(self):
+        if not self.book_page_exists:
+            return None
+        isbn_div = book_specs.find('div', 'isbn')
 
-    # 2. Find authors
-    authors_div = book_specs.find('div', 'authors')
-    if authors_div:
-        author = authors_div.a.text
-    else:
-        author = '-'
+        if isbn_div is not None:
+            isbn = isbn_div.text
+        else:
+            inbn = '-'
+        return isbn
 
-
-    # 3. Find publisher
-    publisher_div = book_specs.find('div', 'publisher')
-    publisher = publisher_div.a.text
-
-
-    # 4. Year
-    year = publisher_div.text.split()[-2]
-
-
-    # 5. ISBN
-    isbn_div = book_specs.find('div', 'isbn')
-
-    if isbn_div is not None:
-        isbn = isbn_div.text
-    else:
-        inbn = '-'
-
-
-    # 6. Find cover image url
-    image_div = source.find('div', id='product-image')
-    src_key = ''
-    image_url = 'no_path'
-    if image_div.img.has_attr('src'):
-        src_key = 'src'
-    elif image_div.img.has_attr('data-src'):
-        src_key = 'data_src'
-    if src_key:
-        image_url = image_div.img[src_key]
-
+    def find_cover_image_url(self):
+        if not self.book_page_exists:
+            return None
+        image_div = self.source.find('div', id='product-image')
+        src_key = ''
+        image_url = 'no_path'
+        if image_div.img.has_attr('src'):
+            src_key = 'src'
+        elif image_div.img.has_attr('data-src'):
+            src_key = 'data_src'
+        if src_key:
+            image_url = image_div.img[src_key]
+        return image_url
 
     # 7. Find annotation text
-    about_div = source.find('div', id='product-about')
-    annotation = about_div.p.text
+    def find_annotation_text(self):
+        if not self.book_page_exists:
+            return None
+        about_div = self.source.find('div', id='product-about')
+        annotation = about_div.p.text
 
-    debug_result_string = """\n
-    ----------------------------
-    book No. {}
-    ---------
-    1. Title: {};
-    2. Authors: {};
-    3. Publisher: {};
-    4. Year: {};
-    5. ISBN: {};
-    6. Cover image URL: {};
-    7. Annotation: {} 
-    """
+    def return_result(self):
+        debug_result_string = """\n
+        ----------------------------
+        book No. {}
+        ---------
+        1. Title: {};
+        2. Authors: {};
+        3. Publisher: {};
+        4. Year: {};
+        5. ISBN: {};
+        6. Cover image URL: {};
+        7. Annotation: {} 
+        """
+        debug_result_string = debug_result_string.format(book_number, book_title, author, publisher, year, isbn, image_url, annotation)
 
-    debug_result_string = debug_result_string.format(book_number, book_title, author, publisher, year, isbn, image_url, annotation)
-
-    print(debug_result_string)
+        return debug_result_string
 
 
 if __name__ == '__main__':
