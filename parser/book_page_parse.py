@@ -5,10 +5,22 @@ import json
 
 GOOGLE_CACHE_PATH = 'http://webcache.googleusercontent.com/search?q=cache:'
 BOOK_BASE_URL = 'https://www.labirint.ru/books/81239{}/'
+DEBUG_STRING = """\n
+        ----------------------------
+        book No. {}
+        ---------
+        1. Title: {};
+        2. Authors: {};
+        3. Publisher: {};
+        4. Year: {};
+        5. ISBN: {};
+        6. Cover image URL: {};
+        7. Annotation: {} 
+        """
 
-
-class ParseSingleBookPage:
+class SingleBookPageParser:
     def __init__(self, book_number):
+        self.book_number = book_number
         self.book_page_exists = True
         request_result = httpx.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
         code = request_result.status_code
@@ -20,7 +32,9 @@ class ParseSingleBookPage:
         self.source = BeautifulSoup(request_result.text, 'lxml')
         # Find book specs block
         self.book_specs = self.source.find('div', 'product-description')
-        
+        self.publisher_div = self.book_specs.find('div', 'publisher')
+
+
     def find_book_title(self):
         if not self.book_page_exists:
             return None
@@ -41,8 +55,7 @@ class ParseSingleBookPage:
     def find_publisher(self):
         if not self.book_page_exists:
             return None
-        publisher_div = self.book_specs.find('div', 'publisher')
-        publisher = publisher_div.a.text
+        publisher = self.publisher_div.a.text
         return publisher
 
     def find_year(self):
@@ -54,7 +67,7 @@ class ParseSingleBookPage:
     def find_isbn(self):
         if not self.book_page_exists:
             return None
-        isbn_div = book_specs.find('div', 'isbn')
+        isbn_div = self.book_specs.find('div', 'isbn')
 
         if isbn_div is not None:
             isbn = isbn_div.text
@@ -84,23 +97,21 @@ class ParseSingleBookPage:
         annotation = about_div.p.text
 
     def return_result(self):
-        debug_result_string = """\n
-        ----------------------------
-        book No. {}
-        ---------
-        1. Title: {};
-        2. Authors: {};
-        3. Publisher: {};
-        4. Year: {};
-        5. ISBN: {};
-        6. Cover image URL: {};
-        7. Annotation: {} 
-        """
-        debug_result_string = debug_result_string.format(book_number, book_title, author, publisher, year, isbn, image_url, annotation)
+        if self.book_page_exists:
+            debug_result_string = DEBUG_STRING.format(self.book_number, 
+                                                    self.find_book_title(), 
+                                                    self.find_authors(),
+                                                    self.find_publisher(),
+                                                    self.find_year(),
+                                                    self.find_isbn(),
+                                                    self.find_cover_image_url(),
+                                                    self.find_annotation_text())
 
-        return debug_result_string
+            return debug_result_string
+        return None
 
 
 if __name__ == '__main__':
     for i in range(10):
-        parse_single_book_page(i)
+        book_parser = SingleBookPageParser(i)
+        print(book_parser.return_result())
