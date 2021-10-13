@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import requests
+import httpx
 import json
 
 
@@ -8,7 +8,7 @@ BOOK_BASE_URL = 'https://www.labirint.ru/books/81239{}/'
 
 
 def parse_single_book_page(book_number):
-    request_result = requests.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
+    request_result = httpx.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
     code = request_result.status_code
     if code < 200 or code > 299:
         print(f'\n-----\nPage doesn\'t exist for book {book_number}. Status code {code}')
