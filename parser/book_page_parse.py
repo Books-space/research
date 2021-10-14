@@ -1,3 +1,4 @@
+import logging
 from urllib import robotparser
 from time import sleep
 from random import uniform
@@ -9,11 +10,12 @@ import httpx
 BOOK_BASE_URL = 'https://www.labirint.ru/books/81249{}/'
 LABIRINT_ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
 
+logger = logging.getLogger('book_page_parser')
 
 @dataclass
 class Book:
     title: str
-    author: strfla
+    author: str
     publisher: str
     year: int
     isbn: str
@@ -22,39 +24,13 @@ class Book:
 
 
 class SingleBookPageParser:
-
-    def robots_dont_permit(self):
-        if not self.robot_parser.can_fetch('*', self.book_page_url):
-            print('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
-            return True
-        redirection_url = self.request_result.url
-        if redirection_url != self.book_page_url:
-            print(f'Redirected to:\n{redirection_url};')
-            if not self.robot_parser.can_fetch('*', self.book_page_url):
-                print('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
-                return True
-        print('Crawl delay {}'.format(self.robot_parser.crawl_delay(self.book_page_url)))
-        return False
-
-    def inappropriate_status_code(self):
-        code = self.request_result.status_code
-        if code < 200 or code > 299:
-            print(f'\n-----\nPage doesn\'t exist for book {self.book_number}. Status code {code}')
-            return True
-        return False
-
-    def not_book_url(self):
-        book_section = str(self.request_result.url).split('/')[-3]
-        print(f'book section in url: {book_section}')
-        return book_section != 'books'
-
     def __init__(self, book_number):
         self.book_number = book_number
         self.robot_parser = robotparser.RobotFileParser()
         self.robot_parser.set_url(LABIRINT_ROBOTS_TXT)
         self.robot_parser.read()
         self.book_page_url = BOOK_BASE_URL.format(book_number)
-        print(self.book_page_url)
+        logger.debug(self.book_page_url)
         self.book_number = book_number
         self.book_page_exists = True
         self.request_result = httpx.get(self.book_page_url)
@@ -67,6 +43,31 @@ class SingleBookPageParser:
         # Find book specs block
         self.book_specs = self.source.find('div', 'product-description')
         self.publisher_div = self.book_specs.find('div', 'publisher')
+
+    def robots_dont_permit(self):
+        if not self.robot_parser.can_fetch('*', self.book_page_url):
+            logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
+            return True
+        redirection_url = self.request_result.url
+        if redirection_url != self.book_page_url:
+            logger.debug(f'Redirected to:\n{redirection_url};')
+            if not self.robot_parser.can_fetch('*', self.book_page_url):
+                logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
+                return True
+        logger.debug('Crawl delay {}'.format(self.robot_parser.crawl_delay(self.book_page_url)))
+        return False
+
+    def inappropriate_status_code(self):
+        code = self.request_result.status_code
+        if code < 200 or code > 299:
+            logger.debug(f'\n-----\nPage doesn\'t exist for book {self.book_number}. Status code {code}')
+            return True
+        return False
+
+    def not_book_url(self):
+        book_section = str(self.request_result.url).split('/')[-3]
+        logger.debug(f'book section in url: {book_section}')
+        return book_section != 'books'
 
     def find_book_title(self):
         if not self.book_page_exists:
@@ -142,12 +143,13 @@ class SingleBookPageParser:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
     for i in range(10):
         if i > 0:
             pause_period = uniform(1.0, 3.0)
-            print(f'wait for:{pause_period} sec.')
-            print(pause_period)
+            logger.debug(f'wait for:{pause_period} sec.')
+            logger.debug(pause_period)
             sleep(pause_period)
-        print(i)
+        logger.debug(i)
         book_parser = SingleBookPageParser(i)
-        print(book_parser.return_result().__repr__())
+        logger.debug(book_parser.return_result().__repr__())
