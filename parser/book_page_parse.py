@@ -1,22 +1,14 @@
+from urllib import robotparser
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
 
 
-GOOGLE_CACHE_PATH = 'http://webcache.googleusercontent.com/search?q=cache:'
 BOOK_BASE_URL = 'https://www.labirint.ru/books/81249{}/'
-DEBUG_STRING = """\n
-        ---------
-        Book:
-        ---------
-        1. Title: {};
-        2. Authors: {};
-        3. Publisher: {};
-        4. Year: {};
-        5. ISBN: {};
-        6. Cover image URL: {};
-        7. Annotation: {}
-        """
+LABIRINT_ROBOTS = 'https://www.labirint.ru/robots.txt'
+LABIRINT_ROBOT_PARSER = robotparser.RobotFileParser()
+LABIRINT_ROBOT_PARSER.set_url(LABIRINT_ROBOTS)
+LABIRINT_ROBOT_PARSER.read()
 
 
 @dataclass
@@ -31,10 +23,24 @@ class Book:
 
 
 class SingleBookPageParser:
+
+    def robots_permit(self, url):
+        if not LABIRINT_ROBOT_PARSER.can_fetch('*', url):
+            print('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
+            return False
+        print('Crawl delay {}'.format(LABIRINT_ROBOT_PARSER.crawl_delay(url)))
+        return True
+
     def __init__(self, book_number):
+        book_page_url = BOOK_BASE_URL.format(book_number)
+        print(book_page_url)
+        if not self.robots_permit(book_page_url):
+            self.book_page_exists = False
+            return
+
         self.book_number = book_number
         self.book_page_exists = True
-        request_result = httpx.get(''.join((GOOGLE_CACHE_PATH, BOOK_BASE_URL.format(book_number))))
+        request_result = httpx.get(book_page_url)
         code = request_result.status_code
         if code < 200 or code > 299:
             print(f'\n-----\nPage doesn\'t exist for book {book_number}. Status code {code}')
