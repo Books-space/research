@@ -26,9 +26,9 @@ class Book:
 class SingleBookPageParser:
     def __init__(self, book_number):
         self.book_number = book_number
-        self.robot_parser = robotparser.RobotFileParser()
-        self.robot_parser.set_url(LABIRINT_ROBOTS_TXT)
-        self.robot_parser.read()
+        self.robots = robotparser.RobotFileParser()
+        self.robots.set_url(LABIRINT_ROBOTS_TXT)
+        self.robots.read()
         self.book_page_url = BOOK_BASE_URL.format(book_number)
         logger.debug(self.book_page_url)
         self.book_number = book_number
@@ -45,16 +45,16 @@ class SingleBookPageParser:
         self.publisher_div = self.book_specs.find('div', 'publisher')
 
     def robots_dont_permit(self):
-        if not self.robot_parser.can_fetch('*', self.book_page_url):
+        if not self.robots.can_fetch('*', self.book_page_url):
             logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
             return True
         redirection_url = self.request_result.url
         if redirection_url != self.book_page_url:
             logger.debug(f'Redirected to:\n{redirection_url};')
-            if not self.robot_parser.can_fetch('*', self.book_page_url):
+            if not self.robots.can_fetch('*', self.book_page_url):
                 logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
                 return True
-        logger.debug('Crawl delay {}'.format(self.robot_parser.crawl_delay(self.book_page_url)))
+        logger.debug('Crawl delay {}'.format(self.robots.crawl_delay(self.book_page_url)))
         return False
 
     def inappropriate_status_code(self):
