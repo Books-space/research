@@ -1,4 +1,6 @@
 from urllib import robotparser
+from time import sleep
+from random import uniform
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
@@ -127,6 +129,11 @@ class SingleBookPageParser:
 
 if __name__ == '__main__':
     for i in range(10):
+        if i > 0:
+            pause_period = uniform(1.0, 3.0)
+            print(f'wait for:{pause_period} sec.')
+            print(pause_period)
+            sleep(pause_period)
         print(i)
         book_parser = SingleBookPageParser(i)
         print(book_parser.return_result().__repr__())
