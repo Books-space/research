@@ -12,6 +12,7 @@ LABIRINT_ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
 
 logger = logging.getLogger('book_page_parser')
 
+
 @dataclass
 class Book:
     title: str
@@ -35,7 +36,8 @@ class SingleBookPageParser:
         self.book_page_exists = True
         self.request_result = httpx.get(self.book_page_url)
 
-        if (self.robots_dont_permit() or self.inappropriate_status_code() or self.not_book_url()):
+        if (not self.robots_permit() or not self.appropriate_status_code()
+            or not self.book_url()):
             self.book_page_exists = False
             return
 
@@ -44,30 +46,30 @@ class SingleBookPageParser:
         self.book_specs = self.source.find('div', 'product-description')
         self.publisher_div = self.book_specs.find('div', 'publisher')
 
-    def robots_dont_permit(self):
+    def robots_permit(self):
         if not self.robots.can_fetch('*', self.book_page_url):
             logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
-            return True
+            return False
         redirection_url = self.request_result.url
         if redirection_url != self.book_page_url:
             logger.debug(f'Redirected to:\n{redirection_url};')
             if not self.robots.can_fetch('*', self.book_page_url):
                 logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
-                return True
+                return False
         logger.debug('Crawl delay {}'.format(self.robots.crawl_delay(self.book_page_url)))
-        return False
+        return True
 
-    def inappropriate_status_code(self):
+    def appropriate_status_code(self):
         code = self.request_result.status_code
         if code < 200 or code > 299:
             logger.debug(f'\n-----\nPage doesn\'t exist for book {self.book_number}. Status code {code}')
-            return True
-        return False
+            return False
+        return True
 
-    def not_book_url(self):
+    def book_url(self):
         book_section = str(self.request_result.url).split('/')[-3]
         logger.debug(f'book section in url: {book_section}')
-        return book_section != 'books'
+        return book_section == 'books'
 
     def find_book_title(self):
         if not self.book_page_exists:
