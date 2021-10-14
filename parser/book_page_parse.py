@@ -29,15 +29,6 @@ class Book:
     cover_image_url: str
     annotation: str
 
-    def __repr__(self):
-        return DEBUG_STRING .format(self.title,
-                                    self.author,
-                                    self.publisher,
-                                    self.year,
-                                    self.isbn,
-                                    self.cover_image_url,
-                                    self.annotation)
-
 
 class SingleBookPageParser:
     def __init__(self, book_number):
