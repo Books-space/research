@@ -15,8 +15,9 @@ DEBUG_STRING = """\n
         4. Year: {};
         5. ISBN: {};
         6. Cover image URL: {};
-        7. Annotation: {} 
+        7. Annotation: {}
         """
+
 
 @dataclass
 class Book:
@@ -29,7 +30,7 @@ class Book:
     annotation: str
 
     def __repr__(self):
-        return DEBUG_STRING .format(self.title, 
+        return DEBUG_STRING .format(self.title,
                                     self.author,
                                     self.publisher,
                                     self.year,
@@ -91,7 +92,7 @@ class SingleBookPageParser:
         if isbn_div is not None:
             isbn = isbn_div.text.split()[-1]
         else:
-            inbn = '-'
+            isbn = '-'
         return isbn
 
     def find_cover_image_url(self):
@@ -117,7 +118,7 @@ class SingleBookPageParser:
 
     def return_result(self):
         if self.book_page_exists:
-            return Book(self.find_book_title(), 
+            return Book(self.find_book_title(),
                         self.find_authors(),
                         self.find_publisher(),
                         self.find_year(),
