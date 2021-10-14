@@ -5,10 +5,15 @@ from random import uniform
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
+from tqdm import tqdm
 
 
-BOOK_BASE_URL = 'https://www.labirint.ru/books/81249{}/'
+START_ID = 30000
+NUM_BOOKS_TO_PARSE = 10
+BOOK_BASE_URL = 'https://www.labirint.ru/books/{}/'
 LABIRINT_ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
+WAIT_RANGE = (1.0, 3.0)
+
 
 logger = logging.getLogger('book_page_parser')
 
@@ -33,15 +38,22 @@ class SingleBookPageParser:
         self.book_page_url = BOOK_BASE_URL.format(book_number)
         logger.debug(self.book_page_url)
         self.book_number = book_number
-        self.book_page_exists = True
-        self.request_result = httpx.get(self.book_page_url)
+        self.response = httpx.get(self.book_page_url)
 
-        if (not self.robots_permit() or not self.appropriate_status_code()
-            or not self.book_url()):
+        self.book_page_exists = True
+        if not self.robots_permit():
             self.book_page_exists = False
             return
 
-        self.source = BeautifulSoup(self.request_result.text, 'lxml')
+        if not self.appropriate_status_code():
+            self.book_page_exists = False
+            return
+
+        if not self.book_url():
+            self.book_page_exists = False
+            return
+
+        self.source = BeautifulSoup(self.response.text, 'lxml')
         # Find book specs block
         self.book_specs = self.source.find('div', 'product-description')
         self.publisher_div = self.book_specs.find('div', 'publisher')
@@ -50,7 +62,7 @@ class SingleBookPageParser:
         if not self.robots.can_fetch('*', self.book_page_url):
             logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
             return False
-        redirection_url = self.request_result.url
+        redirection_url = self.response.url
         if redirection_url != self.book_page_url:
             logger.debug(f'Redirected to:\n{redirection_url};')
             if not self.robots.can_fetch('*', self.book_page_url):
@@ -60,14 +72,14 @@ class SingleBookPageParser:
         return True
 
     def appropriate_status_code(self):
-        code = self.request_result.status_code
+        code = self.response.status_code
         if code < 200 or code > 299:
-            logger.debug(f'\n-----\nPage doesn\'t exist for book {self.book_number}. Status code {code}')
+            logger.debug(f'Page doesn\'t exist for book {self.book_number}. Status code {code}')
             return False
         return True
 
     def book_url(self):
-        book_section = str(self.request_result.url).split('/')[-3]
+        book_section = str(self.response.url).split('/')[-3]
         logger.debug(f'book section in url: {book_section}')
         return book_section == 'books'
 
@@ -144,14 +156,33 @@ class SingleBookPageParser:
         return None
 
 
+def pause_between_parsings():
+    pause_period = uniform(*WAIT_RANGE)
+    quant_period = pause_period / 20
+    logger.debug('{}{}'.format('-' * 20, '\n' * 10))
+    logger.debug(f'wait for:{pause_period} sec.')
+    # TODO: Нужно включить возврат каретки в Debug Console
+    with tqdm(total=100, ascii=True) as pbar:
+        for i in range(20):
+            sleep(quant_period)
+            pbar.update(5)
+    logger.debug('{}{}'.format('----------', '\n' * 10))
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
-    for i in range(10):
-        if i > 0:
-            pause_period = uniform(1.0, 3.0)
-            logger.debug(f'wait for:{pause_period} sec.')
-            logger.debug(pause_period)
-            sleep(pause_period)
-        logger.debug(i)
-        book_parser = SingleBookPageParser(i)
-        logger.debug(book_parser.return_result().__repr__())
+    logger.debug('Start book parse:')
+    parsed_books_num = 0
+    processed_urls = 0
+    while parsed_books_num < NUM_BOOKS_TO_PARSE:
+        if processed_urls > 0:
+            pause_between_parsings()
+        processed_urls += 1
+        logger.debug(f'Processing url No.: {processed_urls}')
+        book_parser = SingleBookPageParser(START_ID + processed_urls)
+        book = book_parser.return_result()
+        if book is not None:
+            logger.debug(book.__repr__())
+            parsed_books_num += 1
+        else:
+            logger.debug('Not book url, skip;')
