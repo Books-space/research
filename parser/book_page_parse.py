@@ -7,16 +7,13 @@ import httpx
 
 
 BOOK_BASE_URL = 'https://www.labirint.ru/books/81249{}/'
-LABIRINT_ROBOTS = 'https://www.labirint.ru/robots.txt'
-LABIRINT_ROBOT_PARSER = robotparser.RobotFileParser()
-LABIRINT_ROBOT_PARSER.set_url(LABIRINT_ROBOTS)
-LABIRINT_ROBOT_PARSER.read()
+LABIRINT_ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
 
 
 @dataclass
 class Book:
     title: str
-    author: str
+    author: strfla
     publisher: str
     year: int
     isbn: str
@@ -26,30 +23,47 @@ class Book:
 
 class SingleBookPageParser:
 
-    def robots_permit(self, url):
-        if not LABIRINT_ROBOT_PARSER.can_fetch('*', url):
+    def robots_dont_permit(self):
+        if not self.robot_parser.can_fetch('*', self.book_page_url):
             print('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
-            return False
-        print('Crawl delay {}'.format(LABIRINT_ROBOT_PARSER.crawl_delay(url)))
-        return True
+            return True
+        redirection_url = self.request_result.url
+        if redirection_url != self.book_page_url:
+            print(f'Redirected to:\n{redirection_url};')
+            if not self.robot_parser.can_fetch('*', self.book_page_url):
+                print('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
+                return True
+        print('Crawl delay {}'.format(self.robot_parser.crawl_delay(self.book_page_url)))
+        return False
+
+    def inappropriate_status_code(self):
+        code = self.request_result.status_code
+        if code < 200 or code > 299:
+            print(f'\n-----\nPage doesn\'t exist for book {self.book_number}. Status code {code}')
+            return True
+        return False
+
+    def not_book_url(self):
+        book_section = str(self.request_result.url).split('/')[-3]
+        print(f'book section in url: {book_section}')
+        return book_section != 'books'
 
     def __init__(self, book_number):
-        book_page_url = BOOK_BASE_URL.format(book_number)
-        print(book_page_url)
-        if not self.robots_permit(book_page_url):
-            self.book_page_exists = False
-            return
-
+        self.book_number = book_number
+        self.robot_parser = robotparser.RobotFileParser()
+        self.robot_parser.set_url(LABIRINT_ROBOTS_TXT)
+        self.robot_parser.read()
+        self.book_page_url = BOOK_BASE_URL.format(book_number)
+        print(self.book_page_url)
         self.book_number = book_number
         self.book_page_exists = True
-        request_result = httpx.get(book_page_url)
-        code = request_result.status_code
-        if code < 200 or code > 299:
-            print(f'\n-----\nPage doesn\'t exist for book {book_number}. Status code {code}')
+        self.request_result = httpx.get(self.book_page_url)
+
+        if (self.robots_dont_permit() or self.inappropriate_status_code() or self.not_book_url()):
             self.book_page_exists = False
             return
 
-        self.source = BeautifulSoup(request_result.text, 'lxml')
+        self.source = BeautifulSoup(self.request_result.text, 'lxml')
         # Find book specs block
         self.book_specs = self.source.find('div', 'product-description')
         self.publisher_div = self.book_specs.find('div', 'publisher')
