@@ -1,4 +1,5 @@
 import logging
+from pprint import pprint
 from urllib import robotparser
 from time import sleep
 from random import uniform
@@ -6,17 +7,6 @@ from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
 
-
-PROGRESS_BAR = ['********* 10 %',
-                ' *******  20 %',
-                '  *****   30 %',
-                '   ***    40 %',
-                '    *     50 %',
-                '   ***    60 %',
-                '  *****   70 %',
-                ' *******  80 %',
-                '********* 90 %',
-                '********* 100 %']
 
 logger = logging.getLogger('book_page_parser')
 
@@ -33,15 +23,16 @@ class Book:
 
 
 class SingleBookPageParser:
-    def __init__(self, book_id):
+    def __init__(self, book_id, base_url, robots_txt):
+        self.base_url = base_url
         self.book_id = book_id
         self.robots = robotparser.RobotFileParser()
-        self.robots.set_url(ROBOTS_TXT)
+        self.robots.set_url(robots_txt)
         self.robots.read()
         self.loaded = False
 
     def load(self):
-        self.book_page_url = BOOK_BASE_URL.format(self.book_id)
+        self.book_page_url = self.base_url.format(self.book_id)
         logger.debug(self.book_page_url)
         self.response = httpx.get(self.book_page_url)
 
@@ -185,17 +176,24 @@ class SingleBookPageParser:
 
 
 class SiteParser:
-    def __init__(self, url, first_book_id=30000, books_number=10, max_ids_to_process=500):
+    def __init__(self, 
+                 url, 
+                 robots_txt,
+                 first_book_id=30000, 
+                 books_number=10, max_ids_to_process=500):
+        
         self.url = url
+        self.robots_txt = robots_txt
         self.first_book_id = first_book_id
         self.books_number = books_number
 
         logger.debug('''Site Parser now initialized with following settings:
         Site URL: {};
+        robots.txt URL: {};
         First book id: {};
         Number of books to parse: {};
         Maximum ids to process: {};
-        '''.format(url, first_book_id, books_number, max_ids_to_process))
+        '''.format(url, robots_txt, first_book_id, books_number, max_ids_to_process))
 
     def parse(self):
         parsed_books_num = 0
@@ -208,7 +206,8 @@ class SiteParser:
             processed_urls += 1
             logger.debug(f'Processing url No.: {processed_urls}')
 
-            book_parser = SingleBookPageParser(self.first_book_id + processed_urls)
+            book_parser = SingleBookPageParser(book_id=self.first_book_id + processed_urls,
+                                               base_url=self.url)
             book_parser.load()
             book = book_parser.return_result()
 
@@ -220,17 +219,41 @@ class SiteParser:
                 logger.debug('Not book url, skip;')
 
     def pause(self, min_period=0.9, max_period=3.1):
+        def wait_and_draw_progressbar(time_quant=1.0):
+            progress_bar = []
+            width = 10
+            stars_num = width
+            spaces_num = -1
+            delta = 1
+            for i in range(1, 11):
+                if i == 6:
+                    delta = 0
+                elif i > 6:
+                    delta = -1
+                spaces_num += delta
+                stars_num = width - 2 * spaces_num
+                star_chars = '*' * stars_num
+                space_chars = ' ' * spaces_num
+                line = f'{space_chars}{star_chars}{space_chars}|{i * 10}%'
+                progress_bar.append(line)
+
+            for watch_bar in progress_bar:
+                sleep(time_quant)
+                logger.debug(watch_bar)
+            logger.debug('{}{}Waiting complete;{}'.format('=' * width, '|', '\n' * 10))
+            
         pause_period = uniform(min_period, max_period)
         quant_period = pause_period / 10
         logger.debug('{}{}'.format('-' * 20, '\n' * 10))
         logger.debug(f'wait for:{pause_period} sec.')
-
-        for watch_bar in PROGRESS_BAR:
-            sleep(quant_period)
-            logger.debug(watch_bar)
-
-        logger.debug('{}{}'.format('----------', '\n' * 10))
+        wait_and_draw_progressbar(time_quant=quant_period)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+    site_parser = SiteParser(url='https://www.labirint.ru/books/{}/',
+                             robots_txt='https://www.labirint.ru/robots.txt',
+                             books_number=15)
+    # resulting_books = site_parser.parse()
+    site_parser.pause()
+    # pprint(resulting_books)
