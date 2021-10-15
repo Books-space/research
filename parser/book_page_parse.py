@@ -6,11 +6,6 @@ from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
 
-START_ID = 30000
-NUM_BOOKS_TO_PARSE = 10
-BOOK_BASE_URL = 'https://www.labirint.ru/books/{}/'
-ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
-WAIT_RANGE = (1.0, 3.0)
 
 PROGRESS_BAR = ['********* 10 %',
                 ' *******  20 %',
@@ -189,34 +184,53 @@ class SingleBookPageParser:
         return None
 
 
-def pause_between_parsings():
-    pause_period = uniform(*WAIT_RANGE)
-    quant_period = pause_period / 10
-    logger.debug('{}{}'.format('-' * 20, '\n' * 10))
-    logger.debug(f'wait for:{pause_period} sec.')
+class SiteParser:
+    def __init__(self, url, first_book_id=30000, books_number=10, max_ids_to_process=500):
+        self.url = url
+        self.first_book_id = first_book_id
+        self.books_number = books_number
 
-    for watch_bar in PROGRESS_BAR:
-        sleep(quant_period)
-        logger.debug(watch_bar)
+        logger.debug('''Site Parser now initialized with following settings:
+        Site URL: {};
+        First book id: {};
+        Number of books to parse: {};
+        Maximum ids to process: {};
+        '''.format(url, first_book_id, books_number, max_ids_to_process))
 
-    logger.debug('{}{}'.format('----------', '\n' * 10))
+    def parse(self):
+        parsed_books_num = 0
+        processed_urls = 0
+        books = []
+
+        while parsed_books_num < self.books_number:
+            if processed_urls > 0:
+                self.pause()
+            processed_urls += 1
+            logger.debug(f'Processing url No.: {processed_urls}')
+
+            book_parser = SingleBookPageParser(self.first_book_id + processed_urls)
+            book_parser.load()
+            book = book_parser.return_result()
+
+            if book is not None:
+                logger.debug(book.__repr__())
+                books.append(book)
+                parsed_books_num += 1
+            else:
+                logger.debug('Not book url, skip;')
+
+    def pause(self, min_period=0.9, max_period=3.1):
+        pause_period = uniform(min_period, max_period)
+        quant_period = pause_period / 10
+        logger.debug('{}{}'.format('-' * 20, '\n' * 10))
+        logger.debug(f'wait for:{pause_period} sec.')
+
+        for watch_bar in PROGRESS_BAR:
+            sleep(quant_period)
+            logger.debug(watch_bar)
+
+        logger.debug('{}{}'.format('----------', '\n' * 10))
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
-    logger.debug('Start book parse:')
-    parsed_books_num = 0
-    processed_urls = 0
-    while parsed_books_num < NUM_BOOKS_TO_PARSE:
-        if processed_urls > 0:
-            pause_between_parsings()
-        processed_urls += 1
-        logger.debug(f'Processing url No.: {processed_urls}')
-        book_parser = SingleBookPageParser(START_ID + processed_urls)
-        book_parser.load()
-        book = book_parser.return_result()
-        if book is not None:
-            logger.debug(book.__repr__())
-            parsed_books_num += 1
-        else:
-            logger.debug('Not book url, skip;')
