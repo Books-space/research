@@ -11,7 +11,7 @@ from tqdm import tqdm
 START_ID = 30000
 NUM_BOOKS_TO_PARSE = 10
 BOOK_BASE_URL = 'https://www.labirint.ru/books/{}/'
-LABIRINT_ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
+ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
 WAIT_RANGE = (1.0, 3.0)
 
 
@@ -30,15 +30,19 @@ class Book:
 
 
 class SingleBookPageParser:
-    def __init__(self, book_number):
-        self.book_number = book_number
+    def __init__(self, book_id):
+        self.book_id = book_id
         self.robots = robotparser.RobotFileParser()
-        self.robots.set_url(LABIRINT_ROBOTS_TXT)
+        self.robots.set_url(ROBOTS_TXT)
         self.robots.read()
-        self.book_page_url = BOOK_BASE_URL.format(book_number)
+        self.loaded = False
+
+    def load(self):
+        self.book_page_url = BOOK_BASE_URL.format(self.book_id)
         logger.debug(self.book_page_url)
-        self.book_number = book_number
         self.response = httpx.get(self.book_page_url)
+
+        self.loaded = True
 
         self.book_page_exists = True
         if not self.robots_permit():
@@ -74,7 +78,7 @@ class SingleBookPageParser:
     def appropriate_status_code(self):
         code = self.response.status_code
         if code < 200 or code > 299:
-            logger.debug(f'Page doesn\'t exist for book {self.book_number}. Status code {code}')
+            logger.debug(f'Page doesn\'t exist for book {self.book_id}. Status code {code}')
             return False
         return True
 
@@ -84,6 +88,9 @@ class SingleBookPageParser:
         return book_section == 'books'
 
     def find_book_title(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         title_div = self.source.find('div', 'prodtitle')
@@ -91,6 +98,9 @@ class SingleBookPageParser:
         return book_title
 
     def find_authors(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         authors_div = self.book_specs.find('div', 'authors')
@@ -101,18 +111,27 @@ class SingleBookPageParser:
         return author
 
     def find_publisher(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         publisher = self.publisher_div.a.text
         return publisher
 
     def find_year(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         year = self.publisher_div.text.split()[-2]
         return year
 
     def find_isbn(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         isbn_div = self.book_specs.find('div', 'isbn')
@@ -124,6 +143,9 @@ class SingleBookPageParser:
         return isbn
 
     def find_cover_image_url(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         image_div = self.source.find('div', id='product-image')
@@ -138,6 +160,9 @@ class SingleBookPageParser:
         return image_url
 
     def find_annotation_text(self):
+        if not self.loaded:
+            print('Book page not loaded. Please .load() it first')
+            return None
         if not self.book_page_exists:
             return None
         about_div = self.source.find('div', id='product-about')
@@ -145,7 +170,7 @@ class SingleBookPageParser:
         return annotation
 
     def return_result(self):
-        if self.book_page_exists:
+        if self.loaded and self.book_page_exists:
             return Book(self.find_book_title(),
                         self.find_authors(),
                         self.find_publisher(),
@@ -180,6 +205,7 @@ if __name__ == '__main__':
         processed_urls += 1
         logger.debug(f'Processing url No.: {processed_urls}')
         book_parser = SingleBookPageParser(START_ID + processed_urls)
+        book_parser.load()
         book = book_parser.return_result()
         if book is not None:
             logger.debug(book.__repr__())
