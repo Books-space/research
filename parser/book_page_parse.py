@@ -176,12 +176,38 @@ class SingleBookPageParser:
 
 
 class SiteParser:
-    def __init__(self, 
-                 url, 
+    progress_bar_lines = [
+         '**********|10%',
+         ' ******** |20%',
+         '  ******  |30%',
+         '   ****   |40%',
+         '    **    |50%',
+         '    **    |60%',
+         '   ****   |70%',
+         '  ******  |80%',
+         ' ******** |90%',
+         '**********|100%']
+
+    exclaimation_mark = '''
+      ******
+     ********
+     *********
+     ********
+     *******
+      *****
+       **
+
+       ***
+      *****
+       ***
+    '''
+
+    def __init__(self,
+                 url,
                  robots_txt,
-                 first_book_id=30000, 
+                 first_book_id=30000,
                  books_number=10, max_ids_to_process=500):
-        
+
         self.url = url
         self.robots_txt = robots_txt
         self.first_book_id = first_book_id
@@ -206,42 +232,35 @@ class SiteParser:
             processed_urls += 1
             logger.debug(f'Processing url No.: {processed_urls}')
 
-            book_parser = SingleBookPageParser(book_id=self.first_book_id + processed_urls,
-                                               base_url=self.url)
-            book_parser.load()
-            book = book_parser.return_result()
+            try:
+                book_parser = SingleBookPageParser(book_id=self.first_book_id + processed_urls,
+                                                   base_url=self.url,
+                                                   robots_txt=self.robots_txt)
+                book_parser.load()
+                book = book_parser.return_result()
+                if book is not None:
+                    logger.debug(book.__repr__())
+                    books.append(book)
+                    parsed_books_num += 1
+                else:
+                    logger.debug('Not book url, skip;')
+            except httpx.HTTPError as page_parser_exception:
+                logger.debug('\n' * 20)
+                logger.debug(f'Book id: {self.first_book_id + processed_urls}')
+                logger.debug(self.exclaimation_mark)
+                logger.debug(page_parser_exception)
+                logger.debug()
 
-            if book is not None:
-                logger.debug(book.__repr__())
-                books.append(book)
-                parsed_books_num += 1
-            else:
-                logger.debug('Not book url, skip;')
+        return books
 
     def pause(self, min_period=0.9, max_period=3.1):
         def wait_and_draw_progressbar(time_quant=1.0):
-            progress_bar = []
             width = 10
-            stars_num = width
-            spaces_num = -1
-            delta = 1
-            for i in range(1, 11):
-                if i == 6:
-                    delta = 0
-                elif i > 6:
-                    delta = -1
-                spaces_num += delta
-                stars_num = width - 2 * spaces_num
-                star_chars = '*' * stars_num
-                space_chars = ' ' * spaces_num
-                line = f'{space_chars}{star_chars}{space_chars}|{i * 10}%'
-                progress_bar.append(line)
-
-            for watch_bar in progress_bar:
+            for watch_bar in self.progress_bar_lines:
                 sleep(time_quant)
                 logger.debug(watch_bar)
             logger.debug('{}{}Waiting complete;{}'.format('=' * width, '|', '\n' * 10))
-            
+
         pause_period = uniform(min_period, max_period)
         quant_period = pause_period / 10
         logger.debug('{}{}'.format('-' * 20, '\n' * 10))
@@ -254,6 +273,6 @@ if __name__ == '__main__':
     site_parser = SiteParser(url='https://www.labirint.ru/books/{}/',
                              robots_txt='https://www.labirint.ru/robots.txt',
                              books_number=15)
-    # resulting_books = site_parser.parse()
-    site_parser.pause()
-    # pprint(resulting_books)
+    resulting_books = site_parser.parse()
+    logging.debug('Resulting book list:')
+    pprint(resulting_books)
