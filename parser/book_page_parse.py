@@ -5,8 +5,6 @@ from random import uniform
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import httpx
-from tqdm import tqdm
-
 
 START_ID = 30000
 NUM_BOOKS_TO_PARSE = 10
@@ -14,6 +12,16 @@ BOOK_BASE_URL = 'https://www.labirint.ru/books/{}/'
 ROBOTS_TXT = 'https://www.labirint.ru/robots.txt'
 WAIT_RANGE = (1.0, 3.0)
 
+PROGRESS_BAR = ['********* 10 %',
+                ' *******  20 %',
+                '  *****   30 %',
+                '   ***    40 %',
+                '    *     50 %',
+                '   ***    60 %',
+                '  *****   70 %',
+                ' *******  80 %',
+                '********* 90 %',
+                '********* 100 %']
 
 logger = logging.getLogger('book_page_parser')
 
@@ -183,14 +191,14 @@ class SingleBookPageParser:
 
 def pause_between_parsings():
     pause_period = uniform(*WAIT_RANGE)
-    quant_period = pause_period / 20
+    quant_period = pause_period / 10
     logger.debug('{}{}'.format('-' * 20, '\n' * 10))
     logger.debug(f'wait for:{pause_period} sec.')
-    # TODO: Нужно включить возврат каретки в Debug Console
-    with tqdm(total=100, ascii=True) as pbar:
-        for i in range(20):
-            sleep(quant_period)
-            pbar.update(5)
+
+    for watch_bar in PROGRESS_BAR:
+        sleep(quant_period)
+        logger.debug(watch_bar)
+
     logger.debug('{}{}'.format('----------', '\n' * 10))
 
 
