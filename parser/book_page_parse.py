@@ -3,7 +3,8 @@ from pprint import pprint
 from urllib import robotparser
 from time import sleep
 from random import uniform
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import csv
 from bs4 import BeautifulSoup
 import httpx
 
@@ -268,11 +269,27 @@ class SiteParser:
         wait_and_draw_progressbar(time_quant=quant_period)
 
 
+def save_list_of_dataclass_objs_to_csv(list_of_dataclass_objs):
+    try:
+        keys = asdict(list_of_dataclass_objs[0]).keys()
+        with open('books_from_resource.csv', 'w') as target_file:
+            dict_writer = csv.DictWriter(target_file, keys)
+            list_of_dicts = [asdict(dc_obj) for dc_obj in list_of_dataclass_objs]
+            logging.debug(list_of_dicts)
+            dict_writer.writerows(list_of_dicts)
+            target_file.close()
+        logging.info('Data was successfully saved to books_from_resource.csv')
+    except Exception as current_exception:
+        logging.error('Sorry, saving to csv failed,'
+                      f' becouse of following exception:\n{current_exception}')
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
     site_parser = SiteParser(url='https://www.labirint.ru/books/{}/',
                              robots_txt='https://www.labirint.ru/robots.txt',
                              books_number=15)
     resulting_books = site_parser.parse()
-    logging.debug('Resulting book list:')
-    pprint(resulting_books)
+    logging.debug('Resulting book list now is about to be saved to csv!')
+    save_list_of_dataclass_objs_to_csv(resulting_books)
+    logging.info('The Chore complete.')
