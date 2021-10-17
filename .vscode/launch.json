@@ -6,10 +6,10 @@
     "configurations": [
         
         {
-            "name": "Python: Current File",
+            "name": "Book Site Parser",
             "type": "python",
             "request": "launch",
-            "module": "parser.book_page_parse",
+            "module": "parser",
             "console": "internalConsole"
         }
     ]

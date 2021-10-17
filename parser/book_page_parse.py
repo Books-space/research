@@ -1,13 +1,12 @@
 import logging
+from dataclasses import dataclass
 from urllib import robotparser
-from random import uniform, randint
-from dataclasses import dataclass, asdict
-import csv
 from bs4 import BeautifulSoup
 import httpx
 
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(filename)s | %(levelname)s: %(message)s')
 
 
 @dataclass
@@ -171,108 +170,3 @@ class SingleBookPageParser:
                         self.find_cover_image_url(),
                         self.find_annotation_text())
         return None
-
-
-class SiteParser:
-
-    def __init__(self,
-                 url,
-                 robots_txt,
-                 first_book_id=30010,
-                 books_number=10, max_ids_to_process=500):
-
-        self.url = url
-        self.robots_txt = robots_txt
-        self.first_book_id = first_book_id
-        self.books_number = books_number
-        self.max_ids_to_process = max_ids_to_process
-
-        logger.debug('''Site Parser now initialized with following settings:
-        Site URL: {};
-        robots.txt URL: {};
-        First book id: {};
-        Number of books to parse: {};
-        Maximum ids to process: {};
-        '''.format(url, robots_txt, first_book_id, books_number, max_ids_to_process))
-
-    def parse(self):
-        parsed_books_num = 0
-        processed_urls = 0
-        current_id = self.first_book_id
-        books = []
-        try:
-            while parsed_books_num < self.books_number and \
-                  processed_urls < self.max_ids_to_process:
-                if processed_urls > 0:
-                    self.pause()
-                processed_urls += 1
-                logger.info(f'Processing url No.: {processed_urls}')
-                increment = randint(1, 10)
-                current_id += increment
-                logger.debug(f'Random increment [1, 10]: {increment};')
-                logger.debug(f'So current id: {current_id};')
-                try:
-                    book_parser = SingleBookPageParser(book_id=current_id,
-                                                       base_url=self.url,
-                                                       robots_txt=self.robots_txt)
-                    book_parser.load()
-                    book = book_parser.return_result()
-                    if book is not None:
-                        logger.debug(book.__repr__())
-                        books.append(book)
-                        parsed_books_num += 1
-                        logger.info(f'Success: done: {parsed_books_num} of {self.books_number};')
-                    else:
-                        logger.debug('Not book url, skip;')
-                        logger.info(f'Fail: done: {parsed_books_num} of {self.books_number};')
-                    logger.info(f'Processed ids: {processed_urls} of {self.max_ids_to_process};')
-                except httpx.HTTPError:
-                    logger.debug(f'Book id: {current_id}', exc_info=True)
-                except Exception:
-                    logger.exception(f'Book id: {current_id}')
-        except KeyboardInterrupt:
-            logger.info('\n\n\n...OK! Parsing was interrupted from keyboard.')
-
-        return books
-
-    def pause(self, min_period=0.9, max_period=3.1):
-        def wait_and_draw_progressbar(time_quant=1.0):
-            width = 10
-            logger.debug('{}{}Waiting complete;{}'.format('=' * width, '|', '\n' * 10))
-
-        pause_period = uniform(min_period, max_period)
-        quant_period = pause_period / 10
-        logger.debug('{}{}'.format('-' * 20, '\n' * 10))
-        logger.debug(f'wait for:{pause_period} sec.')
-        wait_and_draw_progressbar(time_quant=quant_period)
-
-
-def save_list_of_dataclass_objs_to_csv(list_of_dataclass_objs):
-    try:
-        keys = asdict(list_of_dataclass_objs[0]).keys()
-        with open('books_from_resource.csv', 'w') as target_file:
-            dict_writer = csv.DictWriter(target_file, keys)
-            list_of_dicts = [asdict(dc_obj) for dc_obj in list_of_dataclass_objs]
-            logger.debug(list_of_dicts)
-            dict_writer.writerows(list_of_dicts)
-            target_file.close()
-        logger.info('Data was successfully saved to books_from_resource.csv')
-    except IndexError:
-        logger.error('It seems the input list is empty (IndexError), nothing to save into csv.')
-    except Exception as current_exception:
-        logger.error('Sorry, saving to csv failed,'
-                     f' because of following exception:\n{current_exception}')
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    site_parser = SiteParser(url='https://www.labirint.ru/books/{}/',
-                             robots_txt='https://www.labirint.ru/robots.txt',
-                             books_number=2,
-                             max_ids_to_process=1)
-    logger.info('start.')
-    resulting_books = site_parser.parse()
-
-    logger.debug('Resulting book list now is about to be saved to csv!')
-    save_list_of_dataclass_objs_to_csv(resulting_books)
-    logger.info('The Chore complete.')
