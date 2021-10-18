@@ -25,7 +25,7 @@ if __name__ == '__main__':
                   books_number=config.parse_number,
                   max_ids_to_process=config.max_ids,
                   first_book_id=config.first_id,
-                  )
+    )
     logger.info('Start.')
     resulting_books = site_parser.parse()
     logger.debug('Resulting book list now is about to be saved to csv!')

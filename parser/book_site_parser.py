@@ -4,7 +4,10 @@ import httpx
 from parser.book_page_parse import SingleBookPageParser
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(filename)s | %(levelname)s: %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(filename)s | %(levelname)s: %(message)s',  # noqa: WPS323
+)
 
 
 class SiteParser:
@@ -22,13 +25,22 @@ class SiteParser:
         self.books_number = books_number
         self.max_ids_to_process = max_ids_to_process
 
-        logger.debug('''Site Parser now initialized with following settings:
+        debug_str = '''Site Parser now initialized with following settings:
         Site URL: {};
         robots.txt URL: {};
         First book id: {};
         Number of books to parse: {};
         Maximum ids to process: {};
-        '''.format(url, robots_txt, first_book_id, books_number, max_ids_to_process))
+        '''
+
+        logger.debug(debug_str.format(
+                     url, 
+                     robots_txt,
+                     first_book_id,
+                     books_number,
+                     max_ids_to_process,
+        )
+        )
 
     def parse(self):
         parsed_books_num = 0
@@ -36,8 +48,7 @@ class SiteParser:
         current_id = self.first_book_id
         books = []
         try:
-            while parsed_books_num < self.books_number and \
-                  processed_urls < self.max_ids_to_process:
+            while parsed_books_num < self.books_number and processed_urls < self.max_ids_to_process:
                 if processed_urls > 0:
                     self.pause()
                 processed_urls += 1
