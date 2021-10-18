@@ -51,12 +51,12 @@ class SiteParser:
             while parsed_books_num < self.books_number and processed_urls < self.max_ids_to_process:
                 if processed_urls > 0:
                     self.pause()
+                    increment = randint(1, 10)
+                    current_id += increment
+                    logger.debug(f'Random increment [1, 10]: {increment};')
+                logger.debug(f'So current id: {current_id};')
                 processed_urls += 1
                 logger.info(f'Processing url No.: {processed_urls}')
-                increment = randint(1, 10)
-                current_id += increment
-                logger.debug(f'Random increment [1, 10]: {increment};')
-                logger.debug(f'So current id: {current_id};')
                 try:
                     book_parser = SingleBookPageParser(book_id=current_id,
                                                        base_url=self.url,
