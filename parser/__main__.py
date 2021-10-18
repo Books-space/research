@@ -5,7 +5,10 @@ from parser.save_dataclass_list_into_csv import save_list_of_dataclass_objs_to_c
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(filename)s | %(levelname)s: %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(filename)s | %(levelname)s: %(message)s',  # noqa: WPS323
+)
 
 
 if __name__ == '__main__':
