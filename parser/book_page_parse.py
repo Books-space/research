@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(filename)s | %(levelname)s: %(
 
 @dataclass
 class Book:
+    id: int
     title: str
     author: str
     publisher: str
@@ -75,6 +76,9 @@ class SingleBookPageParser:
         book_section = str(self.response.url).split('/')[-3]
         logger.debug(f'book section in url: {book_section}')
         return book_section == 'books'
+
+    def find_book_id(self):
+        return self.book_id
 
     def find_book_title(self):
         if not self.loaded:
@@ -166,7 +170,8 @@ class SingleBookPageParser:
 
     def return_result(self):
         if self.loaded and self.book_page_exists:
-            return Book(self.find_book_title(),
+            return Book(self.find_book_id(),
+                        self.find_book_title(),
                         self.find_authors(),
                         self.find_publisher(),
                         self.find_year(),

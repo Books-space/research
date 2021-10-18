@@ -1,5 +1,5 @@
 import logging
-from time import wait
+from time import sleep
 from random import uniform, randint
 import httpx
 from parser.book_page_parse import SingleBookPageParser
@@ -89,4 +89,4 @@ class SiteParser:
         pause_period = uniform(min_period, max_period)
         logger.debug('{}{}'.format('-' * 20, '\n' * 10))
         logger.debug(f'wait for:{pause_period} sec.')
-        wait(pause_period)
+        sleep(pause_period)
