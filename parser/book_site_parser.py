@@ -78,8 +78,8 @@ class SiteParser:
                     logger.info(f'Processed ids: {processed_urls} of {self.max_ids_to_process};')
                 except httpx.HTTPError:
                     logger.debug(f'Book id: {current_id}', exc_info=True)
-                except Exception:
-                    logger.exception(f'Book id: {current_id}')
+                except Exception as exc:
+                    logger.exception(f'Book id: {current_id} - {exc}')
         except KeyboardInterrupt:
             logger.info('\n\n\n...OK! Parsing was interrupted from keyboard.')
 

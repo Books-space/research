@@ -23,6 +23,7 @@ class Book:
 
 class SingleBookPageParser:
     ok_status = 200
+
     def __init__(self, book_id, base_url, robots_txt):
         self.base_url = base_url
         self.book_id = book_id
@@ -66,7 +67,7 @@ class SingleBookPageParser:
 
     def appropriate_status_code(self):
         code = self.response.status_code
-        logger.info(code)
+        logger.debug(code)
         if code != self.ok_status:
             logger.debug(f"Page doesn't exist for book {self.book_id}. Status code {code}")
             return False
@@ -99,7 +100,7 @@ class SingleBookPageParser:
         if authors_div:
             author = authors_div.a.text
         else:
-            author = '-'
+            author = None
         return author
 
     def find_publisher(self):
@@ -108,7 +109,10 @@ class SingleBookPageParser:
             return None
         if not self.book_page_exists:
             return None
-        return self.publisher_div.a.text
+        publisher = self.publisher_div.a.text
+        if publisher == 'UNKNOWN':
+            raise ValueError('Publisher == "UNKNOWN"')
+        return publisher
 
     def find_year(self):
         if not self.loaded:
@@ -127,15 +131,17 @@ class SingleBookPageParser:
         isbn_div = self.book_specs.find('div', 'isbn')
 
         if isbn_div is not None:
-            logger.info(isbn_div.find_all())
+            logger.debug(isbn_div.find_all())
             if isbn_div.find_all():
-                logger.info(isbn_div.text)
+                logger.debug(isbn_div.text)
                 isbn = isbn_div.text.split()[1]
-                logger.info(isbn)
+                logger.debug(isbn)
             else:
                 isbn = isbn_div.text.split()[-1]
         else:
-            isbn = None
+            raise ValueError('No isbn!')
+        if len(isbn) < 10:
+            raise ValueError(f'Too short isbn "{isbn}"')
         return isbn
 
     def find_cover_image_url(self):
@@ -145,15 +151,10 @@ class SingleBookPageParser:
         if not self.book_page_exists:
             return None
         image_div = self.source.find('div', id='product-image')
-        src_key = ''
-        image_url = 'no_path'
-        if image_div.img.has_attr('src'):
-            src_key = 'src'
-        elif image_div.img.has_attr('data-src'):
-            src_key = 'data_src'
-        if src_key:
-            image_url = image_div.img[src_key]
-        return image_url
+        logger.debug(f'all: {image_div.find_all()};')
+        if image_div.img.has_attr('data-src'):
+            return image_div.img['data-src']
+        raise ValueError('No image data-src in img tag')
 
     def find_annotation_text(self):
         if not self.loaded:
