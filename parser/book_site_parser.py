@@ -1,4 +1,5 @@
 import logging
+from time import wait
 from random import uniform, randint
 import httpx
 from parser.book_page_parse import SingleBookPageParser
@@ -57,6 +58,9 @@ class SiteParser:
                 logger.debug(f'So current id: {current_id};')
                 processed_urls += 1
                 logger.info(f'Processing url No.: {processed_urls}')
+
+                
+
                 try:
                     book_parser = SingleBookPageParser(book_id=current_id,
                                                        base_url=self.url,
@@ -82,12 +86,7 @@ class SiteParser:
         return books
 
     def pause(self, min_period=0.9, max_period=3.1):
-        def wait_and_draw_progressbar(time_quant=1.0):
-            width = 10
-            logger.debug('{}{}Waiting complete;{}'.format('=' * width, '|', '\n' * 10))
-
         pause_period = uniform(min_period, max_period)
-        quant_period = pause_period / 10
         logger.debug('{}{}'.format('-' * 20, '\n' * 10))
         logger.debug(f'wait for:{pause_period} sec.')
-        wait_and_draw_progressbar(time_quant=quant_period)
+        wait(pause_period)

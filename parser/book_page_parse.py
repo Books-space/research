@@ -21,6 +21,7 @@ class Book:
 
 
 class SingleBookPageParser:
+    ok_status = 200
     def __init__(self, book_id, base_url, robots_txt):
         self.base_url = base_url
         self.book_id = book_id
@@ -57,16 +58,16 @@ class SingleBookPageParser:
 
     def robots_permit(self):
         if not self.robots.can_fetch('*', self.book_page_url):
-            logger.debug('Labirinth cache robots.txt doesn\'t permit to fetch this url;')
+            logger.debug("Labirinth cache robots.txt doesn't permit to fetch this url;")
             return False
-        logger.debug('Crawl delay {}'.format(self.robots.crawl_delay(self.book_page_url)))
+        logger.debug('Crawl delay {0}'.format(self.robots.crawl_delay(self.book_page_url)))
         return True
 
     def appropriate_status_code(self):
         code = self.response.status_code
         logger.info(code)
-        if code != 200:
-            logger.debug(f'Page doesn\'t exist for book {self.book_id}. Status code {code}')
+        if code != self.ok_status:
+            logger.debug(f"Page doesn't exist for book {self.book_id}. Status code {code}")
             return False
         return True
 
@@ -77,17 +78,16 @@ class SingleBookPageParser:
 
     def find_book_title(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
         title_div = self.source.find('div', 'prodtitle')
-        book_title = title_div.h1.text
-        return book_title
+        return title_div.h1.text
 
     def find_authors(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
@@ -100,39 +100,43 @@ class SingleBookPageParser:
 
     def find_publisher(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
-        publisher = self.publisher_div.a.text
-        return publisher
+        return self.publisher_div.a.text
 
     def find_year(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
-        year = self.publisher_div.text.split()[-2]
-        return year
+        return self.publisher_div.text.split()[-2]
 
     def find_isbn(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
         isbn_div = self.book_specs.find('div', 'isbn')
 
         if isbn_div is not None:
-            isbn = isbn_div.text.split()[-1]
+            logger.info(isbn_div.find_all())
+            if isbn_div.find_all():
+                logger.info(isbn_div.text)
+                isbn = isbn_div.text.split()[1]
+                logger.info(isbn)
+            else:
+                isbn = isbn_div.text.split()[-1]
         else:
-            isbn = '-'
+            isbn = None
         return isbn
 
     def find_cover_image_url(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
@@ -149,7 +153,7 @@ class SingleBookPageParser:
 
     def find_annotation_text(self):
         if not self.loaded:
-            print('Book page not loaded. Please .load() it first')
+            logger.debug('Book page not loaded. Please .load() it first')
             return None
         if not self.book_page_exists:
             return None
