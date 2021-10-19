@@ -159,6 +159,14 @@ optional = false
 python-versions = ">=3.6,<4.0"
 
 [[package]]
+name = "dataclass-csv"
+version = "1.3.0"
+description = "Map CSV data into dataclasses"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "debugpy"
 version = "1.5.0"
 description = "An implementation of the Debug Adapter Protocol for Python"
@@ -1360,7 +1368,7 @@ notebook = ">=4.4.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "bd2636ed24706de9cbe032b08844163fb2777a935b4955da50531336027c42fd"
+content-hash = "f7cfaff697e618bd7c4aa8f56869a1f1eb59172c1ce55577df73229e412ff205"
 
 [metadata.files]
 anyio = [
@@ -1470,6 +1478,10 @@ colorama = [
 darglint = [
     {file = "darglint-1.8.1-py3-none-any.whl", hash = "sha256:5ae11c259c17b0701618a20c3da343a3eb98b3bc4b5a83d31cdd94f5ebdced8d"},
     {file = "darglint-1.8.1.tar.gz", hash = "sha256:080d5106df149b199822e7ee7deb9c012b49891538f14a11be681044f0bb20da"},
+]
+dataclass-csv = [
+    {file = "dataclass-csv-1.3.0.tar.gz", hash = "sha256:e6df91d942c70a7d6e1d347bbb5c96a22080e8e8d0b7a559a3a016dd4eb490c7"},
+    {file = "dataclass_csv-1.3.0-py2.py3-none-any.whl", hash = "sha256:0ad03e138cb0750f71cf64c56dff9c01f646cbfc6e4092a23d6ce624c9671d96"},
 ]
 debugpy = [
     {file = "debugpy-1.5.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:098753d30232d1e4264eee37e1ddd5d106dc5c4bc6d8d7f4dadad9e44736cd48"},

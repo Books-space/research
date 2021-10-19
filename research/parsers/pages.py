@@ -160,12 +160,14 @@ class PageParser:
 
     def return_result(self):
         if self.loaded and self.book_page_exists:
-            return Book(self.find_book_id(),
-                        self.find_book_title(),
-                        self.find_authors(),
-                        self.find_publisher(),
-                        self.find_year(),
-                        self.find_isbn(),
-                        self.find_cover_image_url(),
-                        self.find_annotation_text())
+            return Book(
+                self.find_book_id(),
+                self.find_book_title(),
+                self.find_authors(),
+                self.find_publisher(),
+                self.find_year(),
+                self.find_isbn(),
+                self.find_cover_image_url(),
+                self.find_annotation_text(),
+            )
         return None

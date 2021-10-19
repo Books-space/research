@@ -1,8 +1,8 @@
 import logging
 from urllib.parse import urlparse
 
-from research.parsers.sites import SiteParser
 from research.config import load_config
+from research.parsers.sites import SiteParser
 from research.storage import BookStorage
 
 logger = logging.getLogger(__name__)
@@ -23,10 +23,10 @@ if __name__ == '__main__':
     site_parser = SiteParser(
         url=config.site,
         robots=robots,
-        books_number=config.parse_number,
-        max_ids_to_process=config.max_ids,
-        first_book_id=config.first_id,
+        count=config.parse_number,
+        max_checks=config.max_ids,
+        start=config.first_id,
     )
 
     books = site_parser.parse()
-    BookStorage().to_csv(books)
+    BookStorage().to_csv(books, config.csv)

@@ -10,9 +10,10 @@ logging.basicConfig(
     format='%(filename)s | %(levelname)s: %(message)s',  # noqa: WPS323
 )
 
+
 class BookStorage:
 
-    def to_csv(books: list[Book], filename: str) -> None:
+    def to_csv(self, books: list[Book], filename: str) -> None:
         logger.debug('Resulting book list now is about to be saved to csv!')
 
         try:

@@ -45,12 +45,11 @@ class SiteParser:
                     book_parser = PageParser(
                         book_id=current_id,
                         base_url=self.url,
-                        robots_txt=self.robots_txt,
+                        robots_txt=self.robots,
                     )
                     book_parser.load()
                     book = book_parser.return_result()
                     if book is not None:
-                        logger.debug(book.__repr__())
                         books.append(book)
                         parsed_books_num += 1
                         logger.info(f'Success: done: {parsed_books_num} of {self.count};')
@@ -69,6 +68,5 @@ class SiteParser:
 
     def pause(self, min_period=0.9, max_period=3.1):
         pause_period = uniform(min_period, max_period)
-        logger.debug('{}{}'.format('-' * 20, '\n' * 10))
         logger.debug(f'wait for:{pause_period} sec.')
         sleep(pause_period)
