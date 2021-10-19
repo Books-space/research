@@ -1,27 +1,16 @@
 import logging
-from dataclasses import dataclass
 from urllib import robotparser
-from bs4 import BeautifulSoup
-import httpx
 
+import httpx
+from bs4 import BeautifulSoup
+
+from research.domain import Book
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(filename)s | %(levelname)s: %(message)s')
 
 
-@dataclass
-class Book:
-    id: int
-    title: str
-    author: str
-    publisher: str
-    year: int
-    isbn: str
-    cover_image_url: str
-    annotation: str
-
-
-class SingleBookPageParser:
+class PageParser:
     ok_status = 200
 
     def __init__(self, book_id, base_url, robots_txt):

@@ -1,8 +1,11 @@
 import logging
+from random import randint, uniform
 from time import sleep
-from random import uniform, randint
+
 import httpx
-from parser.book_page_parse import SingleBookPageParser
+
+from research.domain import Book
+from research.parsers.pages import PageParser
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -13,43 +16,22 @@ logging.basicConfig(
 
 class SiteParser:
 
-    def __init__(self,
-                 url,
-                 robots_txt,
-                 first_book_id=30010,
-                 books_number=10,
-                 max_ids_to_process=500):
-
+    def __init__(self, url, robots, start=30010, count=10, max_checks=500):
         self.url = url
-        self.robots_txt = robots_txt
-        self.first_book_id = first_book_id
-        self.books_number = books_number
-        self.max_ids_to_process = max_ids_to_process
+        self.robots = robots
+        self.start = start
+        self.count = count
+        self.max_checks = max_checks
 
-        debug_str = '''Site Parser now initialized with following settings:
-        Site URL: {};
-        robots.txt URL: {};
-        First book id: {};
-        Number of books to parse: {};
-        Maximum ids to process: {};
-        '''
+    def parse(self) -> list[Book]:
+        logger.info('Start.')
 
-        logger.debug(debug_str.format(
-                     url, 
-                     robots_txt,
-                     first_book_id,
-                     books_number,
-                     max_ids_to_process,
-        )
-        )
-
-    def parse(self):
         parsed_books_num = 0
         processed_urls = 0
-        current_id = self.first_book_id
+        current_id = self.start
         books = []
         try:
-            while parsed_books_num < self.books_number and processed_urls < self.max_ids_to_process:
+            while parsed_books_num < self.count and processed_urls < self.max_checks:
                 if processed_urls > 0:
                     self.pause()
                     increment = randint(1, 10)
@@ -59,23 +41,23 @@ class SiteParser:
                 processed_urls += 1
                 logger.info(f'Processing url No.: {processed_urls}')
 
-                
-
                 try:
-                    book_parser = SingleBookPageParser(book_id=current_id,
-                                                       base_url=self.url,
-                                                       robots_txt=self.robots_txt)
+                    book_parser = PageParser(
+                        book_id=current_id,
+                        base_url=self.url,
+                        robots_txt=self.robots_txt,
+                    )
                     book_parser.load()
                     book = book_parser.return_result()
                     if book is not None:
                         logger.debug(book.__repr__())
                         books.append(book)
                         parsed_books_num += 1
-                        logger.info(f'Success: done: {parsed_books_num} of {self.books_number};')
+                        logger.info(f'Success: done: {parsed_books_num} of {self.count};')
                     else:
                         logger.debug('Not book url, skip;')
-                        logger.info(f'Fail: done: {parsed_books_num} of {self.books_number};')
-                    logger.info(f'Processed ids: {processed_urls} of {self.max_ids_to_process};')
+                        logger.info(f'Fail: done: {parsed_books_num} of {self.count};')
+                    logger.info(f'Processed ids: {processed_urls} of {self.max_checks};')
                 except httpx.HTTPError:
                     logger.debug(f'Book id: {current_id}', exc_info=True)
                 except Exception as exc:
