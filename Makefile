@@ -1,3 +1,3 @@
 lint:
-	@flake8 parser
-	@mypy parser
+	@flake8 research
+	@mypy research
