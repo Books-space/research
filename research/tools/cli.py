@@ -1,20 +1,31 @@
 import typer
 
-from research.tools.run import run
+from research.parsers.sites import SiteParser
+from research.storage import BookStorage
 
 app = typer.Typer()
+
+optinal = typer.Option(default=None)
 
 
 @app.command()
 def launch(
-    site: str = typer.Option(default=None),
-    start: int = typer.Option(default=None), 
-    count: int = typer.Option(default=None), 
-    max_urls: int = typer.Option(default=None),
-    csv_file: str = typer.Option(default=None),
+    site: str = optinal,  # noqa: WPS404
+    start: int = optinal,  # noqa: WPS404
+    count: int = optinal,  # noqa: WPS404
+    max_urls: int = optinal,  # noqa: WPS404
+    csv_file: str = optinal,  # noqa: WPS404
 ):
 
-    run(site, start, count, max_urls, csv_file)
+    site_parser = SiteParser(
+        url=site,
+        count=count,
+        max_checks=max_urls,
+        start=start,
+    )
+
+    books = site_parser.parse()
+    BookStorage().to_csv(books, csv_file)
 
 
 if __name__ == '__main__':
