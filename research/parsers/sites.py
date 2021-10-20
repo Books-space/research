@@ -1,6 +1,7 @@
 import logging
 from random import randint, uniform
 from time import sleep
+from urllib.parse import urlparse
 
 import httpx
 
@@ -16,7 +17,12 @@ logging.basicConfig(
 
 class SiteParser:
 
-    def __init__(self, url, robots, start=30010, count=10, max_checks=500):
+    def __init__(self, url, start=30010, count=10, max_checks=500):
+        parse_result = urlparse(url)
+        scheme = parse_result.scheme
+        netloc = parse_result.netloc
+        robots = f'{scheme}://{netloc}/robots.txt'
+
         self.url = url
         self.robots = robots
         self.start = start
