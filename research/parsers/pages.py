@@ -64,7 +64,7 @@ class PageParser:
 
     def book_url(self):
         book_section = str(self.response.url).split('/')[-3]
-        logger.debug(f'book section in url: {book_section}')
+        logger.debug('book section in url: %s;' % book_section)
         return book_section == 'books'
 
     def find_book_id(self):
@@ -130,7 +130,7 @@ class PageParser:
         else:
             raise ValueError('No isbn!')
         if len(isbn) < 10:
-            raise ValueError(f'Too short isbn "{isbn}"')
+            raise ValueError('Too short isbn "%s";' % isbn)
         return isbn
 
     def find_cover_image_url(self):
@@ -140,7 +140,7 @@ class PageParser:
         if not self.book_page_exists:
             return None
         image_div = self.source.find('div', id='product-image')
-        logger.debug(f'all: {image_div.find_all()};')
+        logger.debug('all: %s;' % image_div.find_all())
         if image_div.img.has_attr('data-src'):
             return image_div.img['data-src']
         raise ValueError('No image data-src in img tag')

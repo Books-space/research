@@ -36,10 +36,10 @@ class SiteParser:
                     self.pause()
                     increment = randint(1, 10)
                     current_id += increment
-                    logger.debug(f'Random increment [1, 10]: {increment};')
-                logger.debug(f'So current id: {current_id};')
+                    logger.debug('Random increment [1, 10]: %s;' % increment)
+                logger.debug('So current id: %s;' % current_id)
                 processed_urls += 1
-                logger.info(f'Processing url No.: {processed_urls}')
+                logger.info('Processing url No.: %s;' % processed_urls)
 
                 try:
                     book_parser = PageParser(
@@ -52,15 +52,15 @@ class SiteParser:
                     if book is not None:
                         books.append(book)
                         parsed_books_num += 1
-                        logger.info(f'Success: done: {parsed_books_num} of {self.count};')
+                        logger.info('Success: done: %s of %s;' % (parsed_books_num, self.count))
                     else:
                         logger.debug('Not book url, skip;')
-                        logger.info(f'Fail: done: {parsed_books_num} of {self.count};')
-                    logger.info(f'Processed ids: {processed_urls} of {self.max_checks};')
+                        logger.info('Fail: done: %s of %s;' % (parsed_books_num, self.count))
+                    logger.info('Processed ids: %s of %s;' % (processed_urls, self.max_checks))
                 except httpx.HTTPError:
-                    logger.debug(f'Book id: {current_id}', exc_info=True)
+                    logger.debug('Book id: %s' % current_id, exc_info=True)
                 except Exception as exc:
-                    logger.exception(f'Book id: {current_id} - {exc}')
+                    logger.exception('Book id: %s - %s;' % (current_id, exc))
         except KeyboardInterrupt:
             logger.info('\n\n\n...OK! Parsing was interrupted from keyboard.')
 
@@ -68,5 +68,5 @@ class SiteParser:
 
     def pause(self, min_period=0.9, max_period=3.1):
         pause_period = uniform(min_period, max_period)
-        logger.debug(f'wait for:{pause_period} sec.')
+        logger.debug('wait for: %s sec.' % pause_period)
         sleep(pause_period)
